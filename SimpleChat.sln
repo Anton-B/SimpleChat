@@ -1,0 +1,40 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 14
+VisualStudioVersion = 14.0.25123.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ChatCore", "ChatCore\ChatCore.csproj", "{01C07A88-BBFF-4DCD-8795-68888F8DF10B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ChatUtils", "ChatUtils\ChatUtils.csproj", "{DF7574DB-7B3B-4BD2-971F-571468851555}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SimpleChatConsole", "SimpleChatConsole\SimpleChatConsole.csproj", "{1658FE6C-6A46-4343-96B6-0F9E08DEDA30}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SimpleChatWPF", "SimpleChatWPF\SimpleChatWPF.csproj", "{BCCF616A-65DE-447B-A0D6-F9A42EBC87A3}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{01C07A88-BBFF-4DCD-8795-68888F8DF10B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{01C07A88-BBFF-4DCD-8795-68888F8DF10B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{01C07A88-BBFF-4DCD-8795-68888F8DF10B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{01C07A88-BBFF-4DCD-8795-68888F8DF10B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DF7574DB-7B3B-4BD2-971F-571468851555}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DF7574DB-7B3B-4BD2-971F-571468851555}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DF7574DB-7B3B-4BD2-971F-571468851555}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DF7574DB-7B3B-4BD2-971F-571468851555}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1658FE6C-6A46-4343-96B6-0F9E08DEDA30}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1658FE6C-6A46-4343-96B6-0F9E08DEDA30}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1658FE6C-6A46-4343-96B6-0F9E08DEDA30}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1658FE6C-6A46-4343-96B6-0F9E08DEDA30}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BCCF616A-65DE-447B-A0D6-F9A42EBC87A3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BCCF616A-65DE-447B-A0D6-F9A42EBC87A3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BCCF616A-65DE-447B-A0D6-F9A42EBC87A3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BCCF616A-65DE-447B-A0D6-F9A42EBC87A3}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

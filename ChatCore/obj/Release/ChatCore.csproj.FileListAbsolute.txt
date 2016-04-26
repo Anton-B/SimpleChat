@@ -1,0 +1,7 @@
+D:\C#\SimpleChat\ChatCore\bin\Release\ChatCore.dll
+D:\C#\SimpleChat\ChatCore\bin\Release\ChatCore.pdb
+D:\C#\SimpleChat\ChatCore\bin\Release\ChatUtils.dll
+D:\C#\SimpleChat\ChatCore\bin\Release\ChatUtils.pdb
+D:\C#\SimpleChat\ChatCore\obj\Release\ChatCore.csprojResolveAssemblyReference.cache
+D:\C#\SimpleChat\ChatCore\obj\Release\ChatCore.dll
+D:\C#\SimpleChat\ChatCore\obj\Release\ChatCore.pdb

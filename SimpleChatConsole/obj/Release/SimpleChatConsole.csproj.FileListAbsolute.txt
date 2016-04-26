@@ -1,0 +1,10 @@
+D:\C#\SimpleChat\SimpleChatConsole\bin\Release\SimpleChatConsole.exe.config
+D:\C#\SimpleChat\SimpleChatConsole\bin\Release\SimpleChatConsole.exe
+D:\C#\SimpleChat\SimpleChatConsole\bin\Release\SimpleChatConsole.pdb
+D:\C#\SimpleChat\SimpleChatConsole\obj\Release\SimpleChatConsole.exe
+D:\C#\SimpleChat\SimpleChatConsole\obj\Release\SimpleChatConsole.pdb
+D:\C#\SimpleChat\SimpleChatConsole\bin\Release\ChatCore.dll
+D:\C#\SimpleChat\SimpleChatConsole\bin\Release\ChatUtils.dll
+D:\C#\SimpleChat\SimpleChatConsole\bin\Release\ChatCore.pdb
+D:\C#\SimpleChat\SimpleChatConsole\bin\Release\ChatUtils.pdb
+D:\C#\SimpleChat\SimpleChatConsole\obj\Release\SimpleChatConsole.csprojResolveAssemblyReference.cache
