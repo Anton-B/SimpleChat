@@ -7,11 +7,13 @@ namespace ChatCore
 {
     public class Chat
     {
-        public event EventHandler<NewMessageEventArgs> NewMessage;
-        public event EventHandler SuccessJoinig;
+        public event EventHandler<ErrorEventArgs> ErrorOccured;
+        public event EventHandler<ChatCreatedEventArgs> ChatCreated;
+        public event EventHandler ConnectionStarted;
+        public event EventHandler<OperationSuccessfulEventArgs> OperationSuccessful;
         public string Name { get; private set; } = "Незнакомец";
-        private Server server;
-        private Client client;
+        public Server Server { get; private set; }
+        public Client Client { get; private set; }
         private SynchronizationContext syncContext;
 
         public Chat(SynchronizationContext context)
@@ -19,78 +21,79 @@ namespace ChatCore
             this.syncContext = context;
         }
 
-        private void ShowNewMessage(string userName, string message, MessageType messageType)
+        private void OnChatCreated(string info)
         {
-            NewMessage?.Invoke(this, new NewMessageEventArgs(userName, message, messageType));
+            ChatCreated?.Invoke(this, new ChatCreatedEventArgs(info));
+        }
+
+        private void OnConnectionStarted()
+        {
+            ConnectionStarted?.Invoke(this, EventArgs.Empty);
+        }
+
+        private void OnOperationSuccessful(string message)
+        {
+            OperationSuccessful?.Invoke(this, new OperationSuccessfulEventArgs(message));
+        }
+
+        private void OnErrorOccured(Exception exception)
+        {
+            ErrorOccured?.Invoke(this, new ErrorEventArgs(exception));
         }
 
         public void ChangeName(string newName)
         {
             if (newName.Length < 2)
             {
-                ShowNewMessage(null, "Ошибка изменения имени: Имя слишком короткое.", MessageType.Error);
+                OnErrorOccured(new Exception("Ошибка изменения имени: Имя слишком короткое."));
                 return;
             }
             this.Name = newName;
-            ShowNewMessage(null, "Имя успешно изменено.", MessageType.Success);
+            OnOperationSuccessful("Имя успешно изменено.");
         }
 
         public async void CreateChat()
         {
-            ShowNewMessage(null, "Создание чата...", MessageType.Info);
             try
             {
-                server = new Server(syncContext);
-                server.NewMessage += ServerAndClient_NewMessage;
-                client = server.Client;
-                client.NewMessage += ServerAndClient_NewMessage;
-                client.SuccessJoining += Client_InterlocutorJoined;
-                ShowNewMessage(null, "Чат создан!", MessageType.Success);
-                ShowNewMessage(null, string.Format("Ваш IP-адрес: {0}\nПорт: {1}\nОжидание собеседника...",
-                    server.IP, server.Port), MessageType.Info);
-                await Task.Run(() => server.Start(Name));
+                Server = new Server(syncContext);
+                Client = Server.Client;
+                OnOperationSuccessful("Чат создан!");
+                OnChatCreated(string.Format("Ваш IP-адрес: {0}\nПорт: {1}\nОжидание собеседника...",
+                    Server.IP, Server.Port));
+                await Task.Run(() => Server.Start(Name));
             }
             catch (Exception ex)
             {
-                ShowNewMessage(null, string.Format("Ошибка создания чата: {0}", ex.Message), MessageType.Error);
+                OnErrorOccured(new Exception(string.Format("Ошибка создания чата: {0}", ex.Message)));
             }
-        }
-
-        private void ServerAndClient_NewMessage(object sender, NewMessageEventArgs e)
-        {
-            ShowNewMessage(e.UserName, e.Message, e.Type);
-        }
-
-        private void Client_InterlocutorJoined(object sender, EventArgs e)
-        {
-            SuccessJoinig?.Invoke(sender, e);
         }
 
         public async void JoinChat(string IPAddress)
         {
             try
             {
-                client = new Client(syncContext, Name);
-                client.NewMessage += ServerAndClient_NewMessage;
-                client.SuccessJoining += Client_InterlocutorJoined;
-                await Task.Run(() => client.Connect(IPAddress));
+                Client = new Client(syncContext, Name);
+                OnConnectionStarted();
+                await Task.Run(() => Client.Connect(IPAddress));
             }
             catch (Exception ex)
             {
-                ShowNewMessage(null, string.Format("Ошибка подключения к чату: {0}", ex.Message), MessageType.Error);
+                OnErrorOccured(new Exception(string.Format("Ошибка подключения к чату: {0}", ex.Message)));
             }
         }
 
         public void SendMessage(string message)
         {
-            client.SendMessage(message);
+            Client.SendMessage(message);
         }
 
         public void Reboot()
         {
-            server?.Dispose();
-            server = null;
-            client = null;
+            Server?.Dispose();
+            Client?.IncomingMessagesCollection.Clear();
+            Server = null;
+            Client = null;
         }
     }
 }

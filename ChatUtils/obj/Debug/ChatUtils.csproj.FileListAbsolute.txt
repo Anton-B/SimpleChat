@@ -2,3 +2,4 @@ D:\C#\SimpleChat\ChatUtils\bin\Debug\ChatUtils.dll
 D:\C#\SimpleChat\ChatUtils\bin\Debug\ChatUtils.pdb
 D:\C#\SimpleChat\ChatUtils\obj\Debug\ChatUtils.dll
 D:\C#\SimpleChat\ChatUtils\obj\Debug\ChatUtils.pdb
+D:\C#\SimpleChat\ChatUtils\obj\Debug\ChatUtils.csprojResolveAssemblyReference.cache

@@ -40,12 +40,17 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ChatCreatedEventArgs.cs" />
     <Compile Include="ChatState.cs" />
+    <Compile Include="ErrorEventArgs.cs" />
     <Compile Include="IPAddressEventArgs.cs" />
+    <Compile Include="Message.cs" />
     <Compile Include="MessageType.cs" />
     <Compile Include="NewMessageEventArgs.cs" />
     <Compile Include="NewNameEventArgs.cs" />
+    <Compile Include="OperationSuccessfulEventArgs.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="SuccessJoiningEventArgs.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

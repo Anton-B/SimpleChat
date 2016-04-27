@@ -6,12 +6,12 @@ using ChatUtils;
 
 namespace ChatCore
 {
-    class Server : IDisposable
+    public class Server : IDisposable
     {
-        public Client Client { get { return client; } }
-        public string IP { get { return ip.ToString(); } }
-        public string Port { get { return port.ToString(); } }
-        public event EventHandler<NewMessageEventArgs> NewMessage;
+        public event EventHandler<ErrorEventArgs> ErrorOccured;
+        internal Client Client { get { return client; } }
+        internal string IP { get { return ip.ToString(); } }
+        internal string Port { get { return port.ToString(); } }
         private SynchronizationContext context;
         private TcpListener listener;
         private Client client;
@@ -40,14 +40,14 @@ namespace ChatCore
             }
             catch (Exception ex)
             {
-                ShowNewMessage(null, "Ошибка создания чата.", MessageType.Error);
+                OnErrorOccured(ex);
                 listener.Stop();
             }
         }
 
-        private void ShowNewMessage(string userName, string message, MessageType messageType)
+        private void OnErrorOccured(Exception exception)
         {
-            context.Post(o => NewMessage?.Invoke(this, new NewMessageEventArgs(userName, message, messageType)), null);
+            context.Post(o => ErrorOccured?.Invoke(this, new ErrorEventArgs(exception)), null);
         }
 
         private IPAddress GetLocalIPAddress()

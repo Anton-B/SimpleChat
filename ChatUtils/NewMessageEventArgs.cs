@@ -4,15 +4,11 @@ namespace ChatUtils
 {
     public class NewMessageEventArgs : EventArgs
     {
-        public string UserName { get; }
-        public string Message { get; }
-        public MessageType Type {get;}
+        public Message Message { get; }
 
-        public NewMessageEventArgs(string userName, string message, MessageType type)
+        public NewMessageEventArgs(Message message)
         {
-            this.UserName = userName;
             this.Message = message;
-            this.Type = type;
         }
     }
 }

@@ -45,7 +45,7 @@ namespace SimpleChatWPF
 
         private void SendMessage(string message)
         {
-            NewMessage?.Invoke(this, new NewMessageEventArgs(UserName, message, MessageType.Output));
+            NewMessage?.Invoke(this, new NewMessageEventArgs(new Message(UserName, message, MessageType.Output)));
         }
 
         public void HandleJoining()
@@ -145,6 +145,7 @@ namespace SimpleChatWPF
         private void createChatButton_Click(object sender, RoutedEventArgs e)
         {
             buttonsGrid.IsEnabled = false;
+            ShowNewMessage(null, "Создание чата...", MessageType.Info);
             CreateChat();
         }
 

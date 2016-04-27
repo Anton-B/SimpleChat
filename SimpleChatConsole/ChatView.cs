@@ -25,7 +25,7 @@ namespace SimpleChatConsole
                                     + "1 - Сменить имя.\n\t"
                                     + "2 - Создать чат.\n\t"
                                     + "3 - Присоединиться к созданному чату.\n\t"
-                                    + "4 - Выйти.\n", MessageType.Info);
+                                    + "4 - Выйти.", MessageType.Info);
             chatState = ChatState.Menu;
         }
 
@@ -62,10 +62,11 @@ namespace SimpleChatConsole
                     ShowMenu();
                     break;
                 case "2":
+                    ShowNewMessage(null, "Создание чата...", MessageType.Info);
                     CreateChat();
                     break;
                 case "3":
-                    ShowNewMessage(null, "Введите IP-адрес чата, к которому хотите присоединиться:\n", MessageType.Info);
+                    ShowNewMessage(null, "Введите IP-адрес чата, к которому хотите присоединиться:", MessageType.Info);
                     chatState = ChatState.JoinChat;
                     JoinChat(Console.ReadLine());
                     break;
@@ -73,7 +74,7 @@ namespace SimpleChatConsole
                     Environment.Exit(0);
                     break;
                 default:
-                    ShowNewMessage(null, "Введен некорректный вариант.\n", MessageType.Error);
+                    ShowNewMessage(null, "Введен некорректный вариант.", MessageType.Error);
                     break;
             }
         }
@@ -95,7 +96,7 @@ namespace SimpleChatConsole
 
         private void SendMessage(string message)
         {
-            NewMessage?.Invoke(this, new NewMessageEventArgs(UserName, message, MessageType.Output));
+            NewMessage?.Invoke(this, new NewMessageEventArgs(new Message(UserName, message, MessageType.Output)));
         }
 
         public void HandleJoining()

@@ -5,15 +5,17 @@ using System.Threading.Tasks;
 using System.Threading;
 using System.IO;
 using System.Reflection;
+using System.Collections.ObjectModel;
 using ChatUtils;
 
 namespace ChatCore
 {
-    class Client
+    public class Client
     {
-        public string Name { get; set; }
-        public event EventHandler<NewMessageEventArgs> NewMessage;
-        public event EventHandler SuccessJoining;
+        public event EventHandler<ChatUtils.ErrorEventArgs> ErrorOccured;
+        public event EventHandler<SuccessJoiningEventArgs> SuccessJoining;
+        public ObservableCollection<Message> IncomingMessagesCollection { get; } = new ObservableCollection<Message>();
+        internal string Name { get; set; }
         private BinaryWriter writer;
         private BinaryReader reader;
         private SynchronizationContext context;
@@ -28,17 +30,17 @@ namespace ChatCore
             this.Name = userName;
         }
 
-        private void ShowNewMessage(string userName, string message, MessageType messageType)
+        private void OnSuccessJoining(string message)
         {
-            context.Post(o => NewMessage?.Invoke(this, new NewMessageEventArgs(userName, message, messageType)), null);
+            context.Post(o => SuccessJoining?.Invoke(this, new SuccessJoiningEventArgs(message)), null);
         }
 
-        private void SendJoiningNotification()
+        private void OnErrorOccured(Exception exception)
         {
-            context.Post(o => SuccessJoining?.Invoke(this, EventArgs.Empty), null);
+            context.Post(o => ErrorOccured?.Invoke(this, new ChatUtils.ErrorEventArgs(exception)), null);
         }
 
-        public async void StartConnection(TcpClient client)
+        internal async void StartConnection(TcpClient client)
         {
             try
             {
@@ -49,9 +51,8 @@ namespace ChatCore
                         return;
                     var interlocutorName = reader.ReadString();
                     var clientData = client.Client.RemoteEndPoint.ToString().Split(':');
-                    ShowNewMessage(null, string.Format("К вам подключился {0}.\n\tIP-адрес собеседника: {1}\n\tПорт: {2}\nНачните общение:",
-                        interlocutorName, clientData[0], clientData[1]), MessageType.Info);
-                    SendJoiningNotification();
+                    OnSuccessJoining(string.Format("К вам подключился {0}.\n\tIP-адрес собеседника: {1}\n\tПорт: {2}\nНачните общение:",
+                        interlocutorName, clientData[0], clientData[1]));
                     writer = new BinaryWriter(client.GetStream());
                     writer.Write(Name);
                     await ReadMessage(interlocutorName, reader);
@@ -59,7 +60,7 @@ namespace ChatCore
             }
             catch
             {
-                ShowNewMessage(null, "Ошибка соединения.", MessageType.Error);
+                OnErrorOccured(new Exception("Ошибка соединения."));
                 return;
             }
         }
@@ -70,7 +71,7 @@ namespace ChatCore
             return (!reader.ReadBoolean() || !reader.ReadString().Equals(assemblyName.ToString())) ? false : true;
         }
 
-        public async void Connect(string ipAddress)
+        internal async void Connect(string ipAddress)
         {
             try
             {
@@ -86,15 +87,13 @@ namespace ChatCore
                     writer.Write(Name);
                     reader = new BinaryReader(client.GetStream());
                     var interlocutorName = reader.ReadString();
-                    ShowNewMessage(null, string.Format("Вы успешно подключились к собеседнику по имени {0}.", interlocutorName), MessageType.Success);
-                    SendJoiningNotification();
-                    ShowNewMessage(null, "Начните общение:", MessageType.Info);
+                    OnSuccessJoining(string.Format("Вы успешно подключились к собеседнику по имени {0}.\nНачните общение: ", interlocutorName));
                     await ReadMessage(interlocutorName, reader);
                 }
             }
             catch
             {
-                ShowNewMessage(null, "Ошибка соединения.", MessageType.Error);
+                OnErrorOccured(new Exception("Ошибка соединения."));
                 return;
             }
         }
@@ -107,7 +106,7 @@ namespace ChatCore
                 if ((message = await Task.Run(() => GetInterlocutorMessageAsync(reader))).Equals(string.Empty))
                     return;
                 else
-                    ShowNewMessage(interlocutorName, message, MessageType.Input);
+                    context.Post(o => IncomingMessagesCollection.Add(new Message(interlocutorName, message, MessageType.Input)), null);
             }
         }
 
@@ -119,12 +118,12 @@ namespace ChatCore
             }
             catch
             {
-                ShowNewMessage(null, "Ошибка соединения. Возможно, ваш собеседник покинул чат.", MessageType.Error);
+                OnErrorOccured(new Exception("Ошибка соединения. Возможно, ваш собеседник покинул чат."));
                 return string.Empty;
             }
         }
 
-        public void SendMessage(string message)
+        internal void SendMessage(string message)
         {
             try
             {
@@ -134,7 +133,7 @@ namespace ChatCore
             }
             catch
             {
-                ShowNewMessage(null, "Ошибка отправки сообщения. Возможно, ваш собеседник покинул чат.", MessageType.Error);
+                OnErrorOccured(new Exception("Ошибка отправки сообщения. Возможно, ваш собеседник покинул чат."));
                 return;
             }
         }
