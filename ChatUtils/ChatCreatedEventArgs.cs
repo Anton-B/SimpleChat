@@ -4,11 +4,13 @@ namespace ChatUtils
 {
     public class ChatCreatedEventArgs : EventArgs
     {
-        public string Message { get; }
+        public string IP { get; }
+        public string Port { get; }
 
-        public ChatCreatedEventArgs(string message)
+        public ChatCreatedEventArgs(string ip, string port)
         {
-            this.Message = message;
+            this.IP = ip;
+            this.Port = port;
         }
     }
 }

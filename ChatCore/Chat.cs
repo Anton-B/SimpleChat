@@ -7,13 +7,6 @@ namespace ChatCore
 {
     public class Chat
     {
-        public event EventHandler<ErrorEventArgs> ErrorOccured;
-        public event EventHandler<ChatCreatedEventArgs> ChatCreated;
-        public event EventHandler ConnectionStarted;
-        public event EventHandler<OperationSuccessfulEventArgs> OperationSuccessful;
-        public string Name { get; private set; } = "Незнакомец";
-        public Server Server { get; private set; }
-        public Client Client { get; private set; }
         private SynchronizationContext syncContext;
 
         public Chat(SynchronizationContext context)
@@ -21,51 +14,34 @@ namespace ChatCore
             this.syncContext = context;
         }
 
-        private void OnChatCreated(string info)
-        {
-            ChatCreated?.Invoke(this, new ChatCreatedEventArgs(info));
-        }
+        public string Name { get; private set; } = "Незнакомец";
+        public Server Server { get; private set; }
+        public Client Client { get; private set; }
 
-        private void OnConnectionStarted()
-        {
-            ConnectionStarted?.Invoke(this, EventArgs.Empty);
-        }
+        public event EventHandler<ErrorEventArgs> ErrorOccured;
+        public event EventHandler<ChatCreatedEventArgs> ChatCreated;
+        public event EventHandler ConnectionStarted;
 
-        private void OnOperationSuccessful(string message)
-        {
-            OperationSuccessful?.Invoke(this, new OperationSuccessfulEventArgs(message));
-        }
-
-        private void OnErrorOccured(Exception exception)
-        {
-            ErrorOccured?.Invoke(this, new ErrorEventArgs(exception));
-        }
-
-        public void ChangeName(string newName)
+        public bool ChangeName(string newName)
         {
             if (newName.Length < 2)
-            {
-                OnErrorOccured(new Exception("Ошибка изменения имени: Имя слишком короткое."));
-                return;
-            }
+                return false;
             this.Name = newName;
-            OnOperationSuccessful("Имя успешно изменено.");
+            return true;
         }
 
-        public async void CreateChat()
+        public void CreateChat()
         {
             try
             {
                 Server = new Server(syncContext);
                 Client = Server.Client;
-                OnOperationSuccessful("Чат создан!");
-                OnChatCreated(string.Format("Ваш IP-адрес: {0}\nПорт: {1}\nОжидание собеседника...",
-                    Server.IP, Server.Port));
-                await Task.Run(() => Server.Start(Name));
+                OnChatCreated(Server.IP, Server.Port);
+                Server.StartAsync(Name);
             }
             catch (Exception ex)
             {
-                OnErrorOccured(new Exception(string.Format("Ошибка создания чата: {0}", ex.Message)));
+                OnErrorOccured(new Exception(string.Format("Ошибка создания чата: {0}", ex.Message), ex));
             }
         }
 
@@ -75,11 +51,11 @@ namespace ChatCore
             {
                 Client = new Client(syncContext, Name);
                 OnConnectionStarted();
-                await Task.Run(() => Client.Connect(IPAddress));
+                await Task.Run(() => Client.ConnectAsync(IPAddress));
             }
             catch (Exception ex)
             {
-                OnErrorOccured(new Exception(string.Format("Ошибка подключения к чату: {0}", ex.Message)));
+                OnErrorOccured(new Exception(string.Format("Ошибка подключения к чату: {0}", ex.Message), ex));
             }
         }
 
@@ -94,6 +70,20 @@ namespace ChatCore
             Client?.IncomingMessagesCollection.Clear();
             Server = null;
             Client = null;
+        }
+
+        private void OnChatCreated(string ip, string port)
+        {
+            ChatCreated?.Invoke(this, new ChatCreatedEventArgs(ip, port));
+        }
+
+        private void OnConnectionStarted()
+        {
+            ConnectionStarted?.Invoke(this, EventArgs.Empty);
+        }
+        private void OnErrorOccured(Exception exception)
+        {
+            ErrorOccured?.Invoke(this, new ErrorEventArgs(exception));
         }
     }
 }

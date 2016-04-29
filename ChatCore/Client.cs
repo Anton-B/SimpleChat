@@ -12,10 +12,6 @@ namespace ChatCore
 {
     public class Client
     {
-        public event EventHandler<ChatUtils.ErrorEventArgs> ErrorOccured;
-        public event EventHandler<SuccessJoiningEventArgs> SuccessJoining;
-        public ObservableCollection<Message> IncomingMessagesCollection { get; } = new ObservableCollection<Message>();
-        internal string Name { get; set; }
         private BinaryWriter writer;
         private BinaryReader reader;
         private SynchronizationContext context;
@@ -30,17 +26,28 @@ namespace ChatCore
             this.Name = userName;
         }
 
-        private void OnSuccessJoining(string message)
+        public ObservableCollection<Message> IncomingMessagesCollection { get; } = new ObservableCollection<Message>();
+        internal string Name { get; set; }
+
+        public event EventHandler<ChatUtils.ErrorEventArgs> ErrorOccured;
+        public event EventHandler<SuccessJoiningEventArgs> SuccessJoining;
+
+        internal void SendMessage(string message)
         {
-            context.Post(o => SuccessJoining?.Invoke(this, new SuccessJoiningEventArgs(message)), null);
+            try
+            {
+                if (message.Equals(string.Empty))
+                    return;
+                writer.Write(message);
+            }
+            catch (Exception ex)
+            {
+                OnErrorOccured(new Exception("Ошибка отправки сообщения. Возможно, ваш собеседник покинул чат.", ex));
+                return;
+            }
         }
 
-        private void OnErrorOccured(Exception exception)
-        {
-            context.Post(o => ErrorOccured?.Invoke(this, new ChatUtils.ErrorEventArgs(exception)), null);
-        }
-
-        internal async void StartConnection(TcpClient client)
+        internal void StartConnection(TcpClient client)
         {
             try
             {
@@ -55,23 +62,22 @@ namespace ChatCore
                         interlocutorName, clientData[0], clientData[1]));
                     writer = new BinaryWriter(client.GetStream());
                     writer.Write(Name);
-                    await ReadMessage(interlocutorName, reader);
+                    ReadMessage(interlocutorName, reader);
                 }
             }
-            catch
+            catch (Exception ex)
             {
-                OnErrorOccured(new Exception("Ошибка соединения."));
+                OnErrorOccured(new Exception("Ошибка соединения.", ex));
                 return;
             }
         }
 
-        private bool VerifyProtocol(BinaryReader reader)
+        internal async void ConnectAsync(string ipAddress)
         {
-            var assemblyName = Assembly.GetEntryAssembly().GetName();
-            return (!reader.ReadBoolean() || !reader.ReadString().Equals(assemblyName.ToString())) ? false : true;
+            await Task.Run(() => Connect(ipAddress));
         }
 
-        internal async void Connect(string ipAddress)
+        private void Connect(string ipAddress)
         {
             try
             {
@@ -88,54 +94,55 @@ namespace ChatCore
                     reader = new BinaryReader(client.GetStream());
                     var interlocutorName = reader.ReadString();
                     OnSuccessJoining(string.Format("Вы успешно подключились к собеседнику по имени {0}.\nНачните общение: ", interlocutorName));
-                    await ReadMessage(interlocutorName, reader);
+                    ReadMessage(interlocutorName, reader);
                 }
             }
-            catch
+            catch (Exception ex)
             {
-                OnErrorOccured(new Exception("Ошибка соединения."));
+                OnErrorOccured(new Exception("Ошибка соединения.", ex));
                 return;
             }
         }
 
-        private async Task ReadMessage(string interlocutorName, BinaryReader reader)
+        private void ReadMessage(string interlocutorName, BinaryReader reader)
         {
             string message = string.Empty;
             while (true)
             {
-                if ((message = await Task.Run(() => GetInterlocutorMessageAsync(reader))).Equals(string.Empty))
+                if ((message = GetInterlocutorMessage(reader)).Equals(string.Empty))
                     return;
                 else
                     context.Post(o => IncomingMessagesCollection.Add(new Message(interlocutorName, message, MessageType.Input)), null);
             }
         }
 
-        private string GetInterlocutorMessageAsync(BinaryReader reader)
+        private string GetInterlocutorMessage(BinaryReader reader)
         {
             try
             {
                 return reader.ReadString();
             }
-            catch
+            catch (Exception ex)
             {
-                OnErrorOccured(new Exception("Ошибка соединения. Возможно, ваш собеседник покинул чат."));
+                OnErrorOccured(new Exception("Ошибка соединения. Возможно, ваш собеседник покинул чат.", ex));
                 return string.Empty;
             }
         }
 
-        internal void SendMessage(string message)
+        private void OnSuccessJoining(string message)
         {
-            try
-            {
-                if (message.Equals(string.Empty))
-                    return;
-                writer.Write(message);
-            }
-            catch
-            {
-                OnErrorOccured(new Exception("Ошибка отправки сообщения. Возможно, ваш собеседник покинул чат."));
-                return;
-            }
+            context.Post(o => SuccessJoining?.Invoke(this, new SuccessJoiningEventArgs(message)), null);
+        }
+
+        private void OnErrorOccured(Exception exception)
+        {
+            context.Post(o => ErrorOccured?.Invoke(this, new ChatUtils.ErrorEventArgs(exception)), null);
+        }
+
+        private bool VerifyProtocol(BinaryReader reader)
+        {
+            var assemblyName = Assembly.GetEntryAssembly().GetName();
+            return (!reader.ReadBoolean() || !reader.ReadString().Equals(assemblyName.ToString())) ? false : true;
         }
     }
 }

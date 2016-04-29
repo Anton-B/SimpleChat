@@ -48,7 +48,6 @@
     <Compile Include="MessageType.cs" />
     <Compile Include="NewMessageEventArgs.cs" />
     <Compile Include="NewNameEventArgs.cs" />
-    <Compile Include="OperationSuccessfulEventArgs.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SuccessJoiningEventArgs.cs" />
   </ItemGroup>

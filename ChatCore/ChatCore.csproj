@@ -42,6 +42,8 @@
   <ItemGroup>
     <Compile Include="Chat.cs" />
     <Compile Include="Client.cs" />
+    <Compile Include="IView.cs" />
+    <Compile Include="Presenter.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Server.cs" />
   </ItemGroup>

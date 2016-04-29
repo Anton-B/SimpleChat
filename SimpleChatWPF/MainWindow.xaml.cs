@@ -3,28 +3,34 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Threading;
 using ChatUtils;
+using ChatCore;
 
 namespace SimpleChatWPF
 {
     /// <summary>
     /// Interaction logic for MainWindow.xaml
     /// </summary>
-    public partial class MainWindow : Window
+    public partial class MainWindow : Window, IView
     {
         private ChatState chatState = ChatState.None;
-        public string UserName { get; set; }
-        public event EventHandler<NewNameEventArgs> NewName;
-        public event EventHandler CreatingChat;
-        public event EventHandler<IPAddressEventArgs> JoiningChat;
-        public event EventHandler<NewMessageEventArgs> NewMessage;
 
         public MainWindow()
         {
             InitializeComponent();
+            Context = SynchronizationContext.Current;
             new Presenter(this);
             inputTextBox.Focus();
         }
+
+        public string UserName { get; set; }
+        public SynchronizationContext Context { get; }
+
+        public event EventHandler<NewNameEventArgs> NewName;
+        public event EventHandler CreatingChat;
+        public event EventHandler<IPAddressEventArgs> JoiningChat;
+        public event EventHandler<NewMessageEventArgs> NewMessage;
 
         private void ChangeName(string name)
         {
@@ -40,12 +46,62 @@ namespace SimpleChatWPF
 
         private void JoinChat(string ipAddress)
         {
+            ShowNewMessage(null, "Выполняется подключение...", MessageType.Info);
             JoiningChat?.Invoke(this, new IPAddressEventArgs(ipAddress));
         }
 
         private void SendMessage(string message)
         {
-            NewMessage?.Invoke(this, new NewMessageEventArgs(new Message(UserName, message, MessageType.Output)));
+            NewMessage?.Invoke(this, new NewMessageEventArgs(message));
+        }
+
+        private void inputTextBox_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key != Key.Enter)
+                return;
+            var inputText = inputTextBox.Text;
+            if (inputText.Equals(string.Empty) || chatState == ChatState.None)
+                return;
+            inputTextBox.Clear();
+            ShowNewMessage(UserName, inputText, MessageType.Output);
+            switch (chatState)
+            {
+                case ChatState.ChangeName:
+                    ChangeName(inputText);
+                    break;
+                case ChatState.JoinChat:
+                    JoinChat(inputText);
+                    break;
+                case ChatState.SendMessage:
+                    SendMessage(inputText);
+                    break;
+            }
+        }
+
+        private void changeNameButton_Click(object sender, RoutedEventArgs e)
+        {
+            buttonsGrid.IsEnabled = false;
+            ShowNewMessage(null, "Введите своё новое имя:", MessageType.Info);
+            chatState = ChatState.ChangeName;
+        }
+
+        private void createChatButton_Click(object sender, RoutedEventArgs e)
+        {
+            buttonsGrid.IsEnabled = false;
+            ShowNewMessage(null, "Создание чата...", MessageType.Info);
+            CreateChat();
+        }
+
+        private void joinChatButton_Click(object sender, RoutedEventArgs e)
+        {
+            buttonsGrid.IsEnabled = false;
+            ShowNewMessage(null, "Введите IP-адрес чата, к которому хотите присоединиться:", MessageType.Info);
+            chatState = ChatState.JoinChat;
+        }
+
+        private void exitButton_Click(object sender, RoutedEventArgs e)
+        {
+            Environment.Exit(0);
         }
 
         public void HandleJoining()
@@ -110,55 +166,6 @@ namespace SimpleChatWPF
             msgBorder.Child = msgStackPanel;
             chatStackPanel.Children.Add(msgBorder);
             chatScrollViewer.ScrollToBottom();
-        }
-
-        private void inputTextBox_KeyDown(object sender, KeyEventArgs e)
-        {
-            if (e.Key != Key.Enter)
-                return;
-            var inputText = inputTextBox.Text;
-            if (inputText.Equals(string.Empty) || chatState == ChatState.None)
-                return;
-            inputTextBox.Clear();
-            ShowNewMessage(UserName, inputText, MessageType.Output);
-            switch (chatState)
-            {
-                case ChatState.ChangeName:
-                    ChangeName(inputText);
-                    break;
-                case ChatState.JoinChat:
-                    JoinChat(inputText);
-                    break;
-                case ChatState.SendMessage:
-                    SendMessage(inputText);
-                    break;
-            }
-        }
-
-        private void changeNameButton_Click(object sender, RoutedEventArgs e)
-        {
-            buttonsGrid.IsEnabled = false;
-            ShowNewMessage(null, "Введите своё новое имя:", MessageType.Info);
-            chatState = ChatState.ChangeName;
-        }
-
-        private void createChatButton_Click(object sender, RoutedEventArgs e)
-        {
-            buttonsGrid.IsEnabled = false;
-            ShowNewMessage(null, "Создание чата...", MessageType.Info);
-            CreateChat();
-        }
-
-        private void joinChatButton_Click(object sender, RoutedEventArgs e)
-        {
-            buttonsGrid.IsEnabled = false;
-            ShowNewMessage(null, "Введите IP-адрес чата, к которому хотите присоединиться:", MessageType.Info);
-            chatState = ChatState.JoinChat;
-        }
-
-        private void exitButton_Click(object sender, RoutedEventArgs e)
-        {
-            Environment.Exit(0);
         }
     }
 }

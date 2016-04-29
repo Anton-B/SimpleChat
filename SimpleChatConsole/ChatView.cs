@@ -1,23 +1,29 @@
 ﻿using System;
+using System.Threading;
 using ChatUtils;
+using ChatCore;
 
 namespace SimpleChatConsole
 {
-    class ChatView
+    class ChatView : IView
     {
         private ChatState chatState = ChatState.None;
-        public string UserName { get; set; }
-        public event EventHandler<NewNameEventArgs> NewName;
-        public event EventHandler CreatingChat;
-        public event EventHandler<IPAddressEventArgs> JoiningChat;
-        public event EventHandler<NewMessageEventArgs> NewMessage;
 
         public ChatView()
         {
+            Context = new SynchronizationContext();
             new Presenter(this);
             ShowMenu();
             ReadInput();
         }
+
+        public string UserName { get; set; }
+        public SynchronizationContext Context { get; }
+
+        public event EventHandler<NewNameEventArgs> NewName;
+        public event EventHandler CreatingChat;
+        public event EventHandler<IPAddressEventArgs> JoiningChat;
+        public event EventHandler<NewMessageEventArgs> NewMessage;
 
         private void ShowMenu()
         {
@@ -91,12 +97,20 @@ namespace SimpleChatConsole
 
         private void JoinChat(string ipAddress)
         {
+            ShowNewMessage(null, "Выполняется подключение...", MessageType.Info);
             JoiningChat?.Invoke(this, new IPAddressEventArgs(ipAddress));
         }
 
         private void SendMessage(string message)
         {
-            NewMessage?.Invoke(this, new NewMessageEventArgs(new Message(UserName, message, MessageType.Output)));
+            NewMessage?.Invoke(this, new NewMessageEventArgs(message));
+        }
+
+        private static void Main(string[] args)
+        {
+            Console.SetWindowSize(80, 60);
+            Console.Title = "Чат";
+            var chatView = new ChatView();
         }
 
         public void HandleJoining()
@@ -144,13 +158,6 @@ namespace SimpleChatConsole
                 default:
                     throw new Exception("Ошибка вывода сообщения.");
             }
-        }
-
-        static void Main(string[] args)
-        {
-            Console.SetWindowSize(80, 60);
-            Console.Title = "Чат";
-            var chatView = new ChatView();
         }
     }
 }

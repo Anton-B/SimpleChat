@@ -3,15 +3,12 @@ using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using ChatUtils;
+using System.Threading.Tasks;
 
 namespace ChatCore
 {
     public class Server : IDisposable
     {
-        public event EventHandler<ErrorEventArgs> ErrorOccured;
-        internal Client Client { get { return client; } }
-        internal string IP { get { return ip.ToString(); } }
-        internal string Port { get { return port.ToString(); } }
         private SynchronizationContext context;
         private TcpListener listener;
         private Client client;
@@ -29,18 +26,28 @@ namespace ChatCore
             listener = new TcpListener(ip, port);
         }
 
-        public void Start(string userName)
+        internal Client Client { get { return client; } }
+        internal string IP { get { return ip.ToString(); } }
+        internal string Port { get { return port.ToString(); } }
+
+        public event EventHandler<ErrorEventArgs> ErrorOccured;
+
+        internal async void StartAsync(string userName)
+        {
+            await Task.Run(() => Start(userName));
+        }
+
+        private void Start(string userName)
         {
             try
             {
                 listener.Start();
                 client.Name = userName;
-                while (true)
-                    client.StartConnection(listener.AcceptTcpClient());
+                client.StartConnection(listener.AcceptTcpClient());
             }
             catch (Exception ex)
             {
-                OnErrorOccured(ex);
+                OnErrorOccured(new Exception("Ошибка чата.", ex));
                 listener.Stop();
             }
         }

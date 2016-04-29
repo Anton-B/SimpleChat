@@ -4,9 +4,9 @@ namespace ChatUtils
 {
     public class NewMessageEventArgs : EventArgs
     {
-        public Message Message { get; }
+        public string Message { get; }
 
-        public NewMessageEventArgs(Message message)
+        public NewMessageEventArgs(string message)
         {
             this.Message = message;
         }
