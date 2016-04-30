@@ -17,21 +17,10 @@ namespace ChatCore
             this.view.NewMessage += View_NewMessage;
             this.model = new Chat(this.view.Context);
             this.model.ChatCreated += Model_ChatCreated;
-            this.model.ConnectionStarted += Model_ConnectionStarted;
             this.model.ErrorOccured += Model_ErrorOccured;
+            this.model.SuccessJoining += Model_SuccessJoining;
+            this.model.IncomingMessages.CollectionChanged += IncomingMessages_CollectionChanged;
             this.view.UserName = model.Name;
-        }
-
-        private void SubscribeToServerEvents()
-        {
-            model.Server.ErrorOccured += Model_ErrorOccured;
-        }
-
-        private void SubscribeToClientEvents()
-        {
-            model.Client.SuccessJoining += Client_SuccessJoining;
-            model.Client.IncomingMessagesCollection.CollectionChanged += IncomingMessagesCollection_CollectionChanged;
-            model.Client.ErrorOccured += Model_ErrorOccured;
         }
 
         private void View_NewName(object sender, NewNameEventArgs e)
@@ -62,16 +51,9 @@ namespace ChatCore
 
         private void Model_ChatCreated(object sender, ChatCreatedEventArgs e)
         {
-            SubscribeToServerEvents();
-            SubscribeToClientEvents();
             view.ShowNewMessage(null, "Чат создан!", MessageType.Success);
             view.ShowNewMessage(null, string.Format("Ваш IP-адрес: {0}\nПорт: {1}\nОжидание собеседника...",
                 e.IP, e.Port), MessageType.Info);
-        }
-
-        private void Model_ConnectionStarted(object sender, EventArgs e)
-        {
-            SubscribeToClientEvents();
         }
 
         private void Model_ErrorOccured(object sender, ErrorEventArgs e)
@@ -80,18 +62,23 @@ namespace ChatCore
             view.ShowNewMessage(null, e.Exception.Message, MessageType.Error);
         }
 
-        private void Client_SuccessJoining(object sender, SuccessJoiningEventArgs e)
+        private void Model_SuccessJoining(object sender, EventArgs e)
         {
-            view.ShowNewMessage(null, e.Message, MessageType.Info);
+            if (model.IsChatOwner)
+                view.ShowNewMessage(null, string.Format("К вам подключился {0}.\n\tIP-адрес собеседника: {1}\n\tПорт: {2}\nНачните общение:",
+                    model.InterlocutorName, model.InterlocutorIP, model.InterlocutorPort), MessageType.Info);
+            else
+                view.ShowNewMessage(null, string.Format("Вы успешно подключились к собеседнику по имени {0}.\nНачните общение: ",
+                    model.InterlocutorName), MessageType.Info);
             view.HandleJoining();
         }
 
-        private void IncomingMessagesCollection_CollectionChanged(object sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
+        private void IncomingMessages_CollectionChanged(object sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
         {
-            if (model.Client.IncomingMessagesCollection == null || model.Client.IncomingMessagesCollection.Count < 1)
+            if (model.IncomingMessages == null || e.NewStartingIndex < 0)
                 return;
-            var newMessage = model.Client.IncomingMessagesCollection[model.Client.IncomingMessagesCollection.Count - 1];
-            view.ShowNewMessage(newMessage.UserName, newMessage.MessageContent, newMessage.Type);
+            var newMessage = model.IncomingMessages[e.NewStartingIndex];
+            view.ShowNewMessage(model.InterlocutorName, newMessage, MessageType.Input);
         }
     }
 }

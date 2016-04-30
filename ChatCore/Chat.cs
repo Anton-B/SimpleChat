@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Threading;
-using System.Threading.Tasks;
+using System.Collections.ObjectModel;
 using ChatUtils;
 
 namespace ChatCore
@@ -8,6 +8,8 @@ namespace ChatCore
     public class Chat
     {
         private SynchronizationContext syncContext;
+        private Server server;
+        private Client client;
 
         public Chat(SynchronizationContext context)
         {
@@ -15,12 +17,15 @@ namespace ChatCore
         }
 
         public string Name { get; private set; } = "Незнакомец";
-        public Server Server { get; private set; }
-        public Client Client { get; private set; }
+        public bool IsChatOwner { get; private set; }
+        public string InterlocutorName { get; internal set; }
+        public string InterlocutorIP { get; internal set; }
+        public string InterlocutorPort { get; internal set; }
+        public ObservableCollection<string> IncomingMessages { get; internal set; } = new ObservableCollection<string>();
 
         public event EventHandler<ErrorEventArgs> ErrorOccured;
         public event EventHandler<ChatCreatedEventArgs> ChatCreated;
-        public event EventHandler ConnectionStarted;
+        public event EventHandler SuccessJoining;
 
         public bool ChangeName(string newName)
         {
@@ -34,10 +39,11 @@ namespace ChatCore
         {
             try
             {
-                Server = new Server(syncContext);
-                Client = Server.Client;
-                OnChatCreated(Server.IP, Server.Port);
-                Server.StartAsync(Name);
+                server = new Server(this, syncContext);
+                client = server.Client;
+                IsChatOwner = true;
+                OnChatCreated(server.IP, server.Port);
+                server.StartAsync(Name);
             }
             catch (Exception ex)
             {
@@ -45,13 +51,13 @@ namespace ChatCore
             }
         }
 
-        public async void JoinChat(string IPAddress)
+        public void JoinChat(string IPAddress)
         {
             try
             {
-                Client = new Client(syncContext, Name);
-                OnConnectionStarted();
-                await Task.Run(() => Client.ConnectAsync(IPAddress));
+                client = new Client(this, syncContext, Name);
+                IsChatOwner = false;
+                client.ConnectAsync(IPAddress);
             }
             catch (Exception ex)
             {
@@ -61,29 +67,30 @@ namespace ChatCore
 
         public void SendMessage(string message)
         {
-            Client.SendMessage(message);
+            client.SendMessage(message);
         }
 
         public void Reboot()
         {
-            Server?.Dispose();
-            Client?.IncomingMessagesCollection.Clear();
-            Server = null;
-            Client = null;
+            server?.Dispose();
+            IncomingMessages.Clear();
+            server = null;
+            client = null;
+        }
+
+        internal void OnSuccessJoining()
+        {
+            SuccessJoining?.Invoke(this, EventArgs.Empty);
+        }
+
+        internal void OnErrorOccured(Exception exception)
+        {
+            ErrorOccured?.Invoke(this, new ErrorEventArgs(exception));
         }
 
         private void OnChatCreated(string ip, string port)
         {
             ChatCreated?.Invoke(this, new ChatCreatedEventArgs(ip, port));
-        }
-
-        private void OnConnectionStarted()
-        {
-            ConnectionStarted?.Invoke(this, EventArgs.Empty);
-        }
-        private void OnErrorOccured(Exception exception)
-        {
-            ErrorOccured?.Invoke(this, new ErrorEventArgs(exception));
         }
     }
 }

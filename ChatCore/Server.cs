@@ -1,8 +1,7 @@
 ﻿using System;
 using System.Net;
-using System.Net.Sockets;
 using System.Threading;
-using ChatUtils;
+using System.Net.Sockets;
 using System.Threading.Tasks;
 
 namespace ChatCore
@@ -13,13 +12,15 @@ namespace ChatCore
         private TcpListener listener;
         private Client client;
         private IPAddress ip;
+        private Chat chat;
         private int port;
 
-        public Server(SynchronizationContext context)
+        public Server(Chat chat, SynchronizationContext context)
         {
             listener = null;
+            this.chat = chat;
             this.context = context;
-            client = new Client(context);
+            client = new Client(chat, context);
             if ((ip = GetLocalIPAddress()) == null)
                 throw new Exception("Локальный IP не найден.");
             port = 81;
@@ -29,8 +30,6 @@ namespace ChatCore
         internal Client Client { get { return client; } }
         internal string IP { get { return ip.ToString(); } }
         internal string Port { get { return port.ToString(); } }
-
-        public event EventHandler<ErrorEventArgs> ErrorOccured;
 
         internal async void StartAsync(string userName)
         {
@@ -47,14 +46,9 @@ namespace ChatCore
             }
             catch (Exception ex)
             {
-                OnErrorOccured(new Exception("Ошибка чата.", ex));
+                context.Post(o => chat.OnErrorOccured(new Exception("Ошибка чата.", ex)), null);
                 listener.Stop();
             }
-        }
-
-        private void OnErrorOccured(Exception exception)
-        {
-            context.Post(o => ErrorOccured?.Invoke(this, new ErrorEventArgs(exception)), null);
         }
 
         private IPAddress GetLocalIPAddress()

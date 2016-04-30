@@ -1,42 +1,36 @@
 ﻿using System;
+using System.IO;
 using System.Net;
+using System.Threading;
+using System.Reflection;
 using System.Net.Sockets;
 using System.Threading.Tasks;
-using System.Threading;
-using System.IO;
-using System.Reflection;
-using System.Collections.ObjectModel;
-using ChatUtils;
 
 namespace ChatCore
 {
     public class Client
     {
+        private SynchronizationContext context;
         private BinaryWriter writer;
         private BinaryReader reader;
-        private SynchronizationContext context;
+        private Chat chat;
 
-        public Client(SynchronizationContext context)
+        public Client(Chat chat, SynchronizationContext context, string userName)
         {
+            this.chat = chat;
             this.context = context;
-        }
-
-        public Client(SynchronizationContext context, string userName) : this(context)
-        {
             this.Name = userName;
         }
 
-        public ObservableCollection<Message> IncomingMessagesCollection { get; } = new ObservableCollection<Message>();
-        internal string Name { get; set; }
+        public Client(Chat chat, SynchronizationContext context) : this(chat, context, null) { }
 
-        public event EventHandler<ChatUtils.ErrorEventArgs> ErrorOccured;
-        public event EventHandler<SuccessJoiningEventArgs> SuccessJoining;
+        internal string Name { get; set; }
 
         internal void SendMessage(string message)
         {
             try
             {
-                if (message.Equals(string.Empty))
+                if (message == string.Empty)
                     return;
                 writer.Write(message);
             }
@@ -56,19 +50,19 @@ namespace ChatCore
                     reader = new BinaryReader(client.GetStream());
                     if (!VerifyProtocol(reader))
                         return;
-                    var interlocutorName = reader.ReadString();
+                    chat.InterlocutorName = reader.ReadString();
                     var clientData = client.Client.RemoteEndPoint.ToString().Split(':');
-                    OnSuccessJoining(string.Format("К вам подключился {0}.\n\tIP-адрес собеседника: {1}\n\tПорт: {2}\nНачните общение:",
-                        interlocutorName, clientData[0], clientData[1]));
+                    chat.InterlocutorIP = clientData[0];
+                    chat.InterlocutorPort = clientData[1];
+                    OnSuccessJoining();
                     writer = new BinaryWriter(client.GetStream());
                     writer.Write(Name);
-                    ReadMessage(interlocutorName, reader);
+                    ReadMessage(reader);
                 }
             }
             catch (Exception ex)
             {
                 OnErrorOccured(new Exception("Ошибка соединения.", ex));
-                return;
             }
         }
 
@@ -92,57 +86,41 @@ namespace ChatCore
                     writer.Write(assemblyName.ToString());
                     writer.Write(Name);
                     reader = new BinaryReader(client.GetStream());
-                    var interlocutorName = reader.ReadString();
-                    OnSuccessJoining(string.Format("Вы успешно подключились к собеседнику по имени {0}.\nНачните общение: ", interlocutorName));
-                    ReadMessage(interlocutorName, reader);
+                    chat.InterlocutorName = reader.ReadString();
+                    OnSuccessJoining();
+                    ReadMessage(reader);
                 }
             }
             catch (Exception ex)
             {
                 OnErrorOccured(new Exception("Ошибка соединения.", ex));
-                return;
             }
         }
 
-        private void ReadMessage(string interlocutorName, BinaryReader reader)
+        private void ReadMessage(BinaryReader reader)
         {
-            string message = string.Empty;
+            var message = string.Empty;
             while (true)
             {
-                if ((message = GetInterlocutorMessage(reader)).Equals(string.Empty))
-                    return;
-                else
-                    context.Post(o => IncomingMessagesCollection.Add(new Message(interlocutorName, message, MessageType.Input)), null);
+                message = reader.ReadString();
+                context.Post(o => chat.IncomingMessages.Add(message), null);
             }
         }
 
-        private string GetInterlocutorMessage(BinaryReader reader)
+        private void OnSuccessJoining()
         {
-            try
-            {
-                return reader.ReadString();
-            }
-            catch (Exception ex)
-            {
-                OnErrorOccured(new Exception("Ошибка соединения. Возможно, ваш собеседник покинул чат.", ex));
-                return string.Empty;
-            }
-        }
-
-        private void OnSuccessJoining(string message)
-        {
-            context.Post(o => SuccessJoining?.Invoke(this, new SuccessJoiningEventArgs(message)), null);
-        }
-
-        private void OnErrorOccured(Exception exception)
-        {
-            context.Post(o => ErrorOccured?.Invoke(this, new ChatUtils.ErrorEventArgs(exception)), null);
+            context.Post(o => chat.OnSuccessJoining(), null);
         }
 
         private bool VerifyProtocol(BinaryReader reader)
         {
             var assemblyName = Assembly.GetEntryAssembly().GetName();
-            return (!reader.ReadBoolean() || !reader.ReadString().Equals(assemblyName.ToString())) ? false : true;
+            return (!reader.ReadBoolean() || reader.ReadString() != assemblyName.ToString()) ? false : true;
+        }
+
+        private void OnErrorOccured(Exception exception)
+        {
+            context.Post(o => chat.OnErrorOccured(exception), null);
         }
     }
 }
