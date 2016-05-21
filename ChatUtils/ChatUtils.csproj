@@ -43,10 +43,8 @@
     <Compile Include="ChatCreatedEventArgs.cs" />
     <Compile Include="ChatState.cs" />
     <Compile Include="ErrorEventArgs.cs" />
-    <Compile Include="IPAddressEventArgs.cs" />
+    <Compile Include="Message.cs" />
     <Compile Include="MessageType.cs" />
-    <Compile Include="NewMessageEventArgs.cs" />
-    <Compile Include="NewNameEventArgs.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

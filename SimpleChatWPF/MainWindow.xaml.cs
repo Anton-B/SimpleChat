@@ -5,54 +5,52 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Threading;
 using ChatUtils;
-using ChatCore;
+using ChatViewModel;
 
 namespace SimpleChatWPF
 {
     /// <summary>
     /// Interaction logic for MainWindow.xaml
     /// </summary>
-    public partial class MainWindow : Window, IView
+    public partial class MainWindow : Window
     {
+        private ViewModel viewModel;
         private ChatState chatState = ChatState.None;
+        private const string isConnectedPropertyName = "IsConnected";
 
         public MainWindow()
         {
             InitializeComponent();
-            Context = SynchronizationContext.Current;
-            new Presenter(this);
+            viewModel = new ViewModel(SynchronizationContext.Current);
+            viewModel.Messages.CollectionChanged += Messages_CollectionChanged;
+            viewModel.PropertyChanged += ViewModel_PropertyChanged;
             inputTextBox.Focus();
         }
 
-        public string UserName { get; set; }
-        public SynchronizationContext Context { get; }
-
-        public event EventHandler<NewNameEventArgs> NewName;
-        public event EventHandler CreatingChat;
-        public event EventHandler<IPAddressEventArgs> JoiningChat;
-        public event EventHandler<NewMessageEventArgs> NewMessage;
-
         private void ChangeName(string name)
         {
-            NewName?.Invoke(this, new NewNameEventArgs(name));
+            viewModel.ChangeName(name);
             chatState = ChatState.None;
             buttonsGrid.IsEnabled = true;
         }
 
         private void CreateChat()
         {
-            CreatingChat?.Invoke(this, EventArgs.Empty);
+            viewModel.CreateChat();
         }
 
         private void JoinChat(string ipAddress)
         {
-            ShowNewMessage(null, "Выполняется подключение...", MessageType.Info);
-            JoiningChat?.Invoke(this, new IPAddressEventArgs(ipAddress));
+            viewModel.Messages.Add(new Message(null, "Выполняется подключение...", MessageType.Info));
+            viewModel.JoinChat(ipAddress);
         }
 
-        private void SendMessage(string message)
+        private void Messages_CollectionChanged(object sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
         {
-            NewMessage?.Invoke(this, new NewMessageEventArgs(message));
+            if (viewModel.Messages == null || e.NewStartingIndex < 0)
+                return;
+            var newMessage = viewModel.Messages[e.NewStartingIndex];
+            ShowNewMessage(newMessage.OwnerName, newMessage.Content, newMessage.MessageType);
         }
 
         private void inputTextBox_KeyDown(object sender, KeyEventArgs e)
@@ -63,7 +61,7 @@ namespace SimpleChatWPF
             if (inputText.Equals(string.Empty) || chatState == ChatState.None)
                 return;
             inputTextBox.Clear();
-            ShowNewMessage(UserName, inputText, MessageType.Output);
+            viewModel.Messages.Add(new Message(viewModel.UserName, inputText, MessageType.Output));
             switch (chatState)
             {
                 case ChatState.ChangeName:
@@ -73,7 +71,7 @@ namespace SimpleChatWPF
                     JoinChat(inputText);
                     break;
                 case ChatState.SendMessage:
-                    SendMessage(inputText);
+                    viewModel.SendMessage(inputText);
                     break;
             }
         }
@@ -81,21 +79,21 @@ namespace SimpleChatWPF
         private void changeNameButton_Click(object sender, RoutedEventArgs e)
         {
             buttonsGrid.IsEnabled = false;
-            ShowNewMessage(null, "Введите своё новое имя:", MessageType.Info);
+            viewModel.Messages.Add(new Message(null, "Введите своё новое имя:", MessageType.Info));
             chatState = ChatState.ChangeName;
         }
 
         private void createChatButton_Click(object sender, RoutedEventArgs e)
         {
             buttonsGrid.IsEnabled = false;
-            ShowNewMessage(null, "Создание чата...", MessageType.Info);
+            viewModel.Messages.Add(new Message(null, "Создание чата...", MessageType.Info));
             CreateChat();
         }
 
         private void joinChatButton_Click(object sender, RoutedEventArgs e)
         {
             buttonsGrid.IsEnabled = false;
-            ShowNewMessage(null, "Введите IP-адрес чата, к которому хотите присоединиться:", MessageType.Info);
+            viewModel.Messages.Add(new Message(null, "Введите IP-адрес чата, к которому хотите присоединиться:", MessageType.Info));
             chatState = ChatState.JoinChat;
         }
 
@@ -104,9 +102,15 @@ namespace SimpleChatWPF
             Environment.Exit(0);
         }
 
-        public void HandleJoining()
+        private void HandleJoining()
         {
             chatState = ChatState.SendMessage;
+        }
+
+        private void ViewModel_PropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == isConnectedPropertyName)
+                HandleJoining();
         }
 
         public void ShowNewMessage(string userName, string message, MessageType messageType)
