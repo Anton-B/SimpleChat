@@ -15,34 +15,14 @@ namespace SimpleChatWPF
     public partial class MainWindow : Window
     {
         private ViewModel viewModel;
-        private ChatState chatState = ChatState.None;
-        private const string isConnectedPropertyName = "IsConnected";
 
         public MainWindow()
         {
             InitializeComponent();
             viewModel = new ViewModel(SynchronizationContext.Current);
             viewModel.Messages.CollectionChanged += Messages_CollectionChanged;
-            viewModel.PropertyChanged += ViewModel_PropertyChanged;
+            userNameTextBlock.Text = viewModel.UserName;
             inputTextBox.Focus();
-        }
-
-        private void ChangeName(string name)
-        {
-            viewModel.ChangeName(name);
-            chatState = ChatState.None;
-            buttonsGrid.IsEnabled = true;
-        }
-
-        private void CreateChat()
-        {
-            viewModel.CreateChat();
-        }
-
-        private void JoinChat(string ipAddress)
-        {
-            viewModel.Messages.Add(new Message(null, "Выполняется подключение...", MessageType.Info));
-            viewModel.JoinChat(ipAddress);
         }
 
         private void Messages_CollectionChanged(object sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
@@ -55,46 +35,32 @@ namespace SimpleChatWPF
 
         private void inputTextBox_KeyDown(object sender, KeyEventArgs e)
         {
-            if (e.Key != Key.Enter)
+            if (e.Key != Key.Enter || inputTextBox.Text == string.Empty || !viewModel.IsConnected)
                 return;
             var inputText = inputTextBox.Text;
-            if (inputText.Equals(string.Empty) || chatState == ChatState.None)
-                return;
             inputTextBox.Clear();
             viewModel.Messages.Add(new Message(viewModel.UserName, inputText, MessageType.Output));
-            switch (chatState)
-            {
-                case ChatState.ChangeName:
-                    ChangeName(inputText);
-                    break;
-                case ChatState.JoinChat:
-                    JoinChat(inputText);
-                    break;
-                case ChatState.SendMessage:
-                    viewModel.SendMessage(inputText);
-                    break;
-            }
+            viewModel.SendMessage(inputText);
         }
 
         private void changeNameButton_Click(object sender, RoutedEventArgs e)
         {
-            buttonsGrid.IsEnabled = false;
-            viewModel.Messages.Add(new Message(null, "Введите своё новое имя:", MessageType.Info));
-            chatState = ChatState.ChangeName;
+            viewModel.UserName = changeNameTextBox.Text;
+            userNameTextBlock.Text = viewModel.UserName;
         }
 
         private void createChatButton_Click(object sender, RoutedEventArgs e)
         {
-            buttonsGrid.IsEnabled = false;
+            ChangeButtonsAccessibility(false);
             viewModel.Messages.Add(new Message(null, "Создание чата...", MessageType.Info));
-            CreateChat();
+            viewModel.CreateChat();
         }
 
         private void joinChatButton_Click(object sender, RoutedEventArgs e)
         {
-            buttonsGrid.IsEnabled = false;
-            viewModel.Messages.Add(new Message(null, "Введите IP-адрес чата, к которому хотите присоединиться:", MessageType.Info));
-            chatState = ChatState.JoinChat;
+            ChangeButtonsAccessibility(false);
+            viewModel.Messages.Add(new Message(null, "Выполняется подключение...", MessageType.Info));
+            viewModel.JoinChat(joinChatTextBox.Text);
         }
 
         private void exitButton_Click(object sender, RoutedEventArgs e)
@@ -102,34 +68,31 @@ namespace SimpleChatWPF
             Environment.Exit(0);
         }
 
-        private void HandleJoining()
+        private void ChangeButtonsAccessibility(bool enable)
         {
-            chatState = ChatState.SendMessage;
+            joinChatTextBox.IsReadOnly = enable ? false : true;
+            changeNameTextBox.IsReadOnly = enable ? false : true;
+            joinChatButton.IsEnabled = enable ? true : false;
+            changeNameButton.IsEnabled = enable ? true : false;
+            createChatButton.IsEnabled = enable ? true : false;
         }
 
-        private void ViewModel_PropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
-        {
-            if (e.PropertyName == isConnectedPropertyName)
-                HandleJoining();
-        }
-
-        public void ShowNewMessage(string userName, string message, MessageType messageType)
+        private void ShowNewMessage(string userName, string message, MessageType messageType)
         {
             var msgBorder = new Border();
             msgBorder.HorizontalAlignment = HorizontalAlignment.Left;
             var msgStackPanel = new StackPanel();
             msgStackPanel.Orientation = Orientation.Vertical;
-            TextBlock userNameTextBlock = null;
+            var userNameTextBlock = new TextBlock();
+            userNameTextBlock.Visibility = Visibility.Collapsed;
+            userNameTextBlock.Margin = new Thickness(4, 4, 4, 0);
+            userNameTextBlock.Foreground = (Brush)new BrushConverter().ConvertFromString("#FF50687A");
+            userNameTextBlock.FontWeight = FontWeights.Bold;
+            userNameTextBlock.HorizontalAlignment = HorizontalAlignment.Left;
+            userNameTextBlock.Text = userName;
             if (userName != null && !userName.Equals(string.Empty))
-            {
-                userNameTextBlock = new TextBlock();
-                userNameTextBlock.Margin = new Thickness(4, 4, 4, 0);
-                userNameTextBlock.Foreground = (Brush)new BrushConverter().ConvertFromString("#FF50687A");
-                userNameTextBlock.FontWeight = FontWeights.Bold;
-                userNameTextBlock.HorizontalAlignment = HorizontalAlignment.Left;
-                userNameTextBlock.Text = userName;
-                msgStackPanel.Children.Add(userNameTextBlock);
-            }
+                userNameTextBlock.Visibility = Visibility.Visible;
+            msgStackPanel.Children.Add(userNameTextBlock);
             switch (messageType)
             {
                 case MessageType.Info:
@@ -140,14 +103,12 @@ namespace SimpleChatWPF
                     break;
                 case MessageType.Error:
                     msgBorder.BorderBrush = (Brush)new BrushConverter().ConvertFromString("DarkRed");
-                    buttonsGrid.IsEnabled = true;
-                    chatState = ChatState.None;
+                    ChangeButtonsAccessibility(true);
                     break;
                 case MessageType.Output:
                     msgBorder.BorderBrush = (Brush)new BrushConverter().ConvertFromString("#FF528EB8");
                     msgBorder.HorizontalAlignment = HorizontalAlignment.Right;
-                    if (userNameTextBlock != null)
-                        userNameTextBlock.HorizontalAlignment = HorizontalAlignment.Right;
+                    userNameTextBlock.HorizontalAlignment = HorizontalAlignment.Right;
                     break;
                 case MessageType.Input:
                     msgBorder.BorderBrush = (Brush)new BrushConverter().ConvertFromString("#FF4D7FA4");

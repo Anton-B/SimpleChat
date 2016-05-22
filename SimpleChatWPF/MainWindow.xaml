@@ -7,20 +7,29 @@
         mc:Ignorable="d"
         Title="Чат" Height="800" Width="600" MinWidth="600" WindowStartupLocation="CenterScreen" ResizeMode="CanMinimize">
     <DockPanel x:Name="mainStackPanel" Margin="30, 10">
-        <Grid x:Name="buttonsGrid" DockPanel.Dock="Top">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="0.82*"/>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="0.82*"/>
-            </Grid.ColumnDefinitions>
-            <Button x:Name="changeNameButton" Grid.Column="0" HorizontalAlignment="Left" Cursor="Hand" Content="Изменить имя" Focusable="False" Height="28" Width="96" Click="changeNameButton_Click"/>
-            <Button x:Name="createChatButton" Grid.Column="1" Cursor="Hand" Content="Создать чат" Focusable="False" Height="28" Width="96" Click="createChatButton_Click"/>
-            <Button x:Name="joinChatButton" Grid.Column="2" Cursor="Hand" Content="Присоединиться" Focusable="False" Height="28" Width="96" Click="joinChatButton_Click"/>
-            <Button x:Name="exitButton" Grid.Column="3" HorizontalAlignment="Right" Cursor="Hand" Focusable="False" Content="Выйти" Height="28" Width="96" Click="exitButton_Click"/>
-        </Grid>
+        <StackPanel x:Name="buttonsStackPanel" DockPanel.Dock="Top">
+            <TextBlock x:Name="userNameTextBlock" Margin="0,0,0,2" FontSize="16" HorizontalAlignment="Center" Foreground="#FF50687A"/>
+            <DockPanel LastChildFill="False">
+                <TextBlock x:Name="enterIPTextBlock" DockPanel.Dock="Left" Margin="0,4,4,4" Width="104" Text="Введите IP адрес:" VerticalAlignment="Center"/>
+                <TextBox x:Name="joinChatTextBox" DockPanel.Dock="Left" MinWidth="200" VerticalContentAlignment="Center"/>
+                <Button x:Name="joinChatButton" DockPanel.Dock="Left" Margin="-1,0,0,0" Cursor="Hand" Content="Присоединиться" Focusable="False" Height="28"
+                        Width="96" Click="joinChatButton_Click"/>
+                <Button x:Name="createChatButton" DockPanel.Dock="Right" Cursor="Hand" Content="Создать чат"
+                        Focusable="False" Height="28" Width="96" Click="createChatButton_Click"/>
+            </DockPanel>
+            <DockPanel LastChildFill="False" Margin="0,4,0,0">
+                <TextBlock x:Name="enterNameTextBlock" DockPanel.Dock="Left" Margin="0,4,4,4" Width="104" Text="Введите ваше имя:" VerticalAlignment="Center"/>
+                <TextBox x:Name="changeNameTextBox" MinWidth="200" VerticalContentAlignment="Center"/>
+                <Button x:Name="changeNameButton" HorizontalAlignment="Left" Margin="-1,0,0,0" Cursor="Hand" Content="Изменить имя" 
+                        Focusable="False" Height="28" Width="96" Click="changeNameButton_Click"/>
+                <Button x:Name="exitButton" DockPanel.Dock="Right" Cursor="Hand" Focusable="False" Content="Выйти" Height="28" 
+                        Width="96" Click="exitButton_Click"/>
+            </DockPanel>
+        </StackPanel>
         <DockPanel x:Name="inputDockPanel" DockPanel.Dock="Bottom">
-            <TextBox x:Name="inputTextBox" Height="60" TextWrapping="Wrap" KeyDown="inputTextBox_KeyDown"/>
+            <Border x:Name="inputTextBorder" BorderBrush="Gray" BorderThickness="1,1,1,1" CornerRadius="0,0,2,2">
+                <TextBox x:Name="inputTextBox" Height="60" TextWrapping="Wrap" Margin="2,0" KeyDown="inputTextBox_KeyDown" BorderThickness="0"/>
+            </Border>
         </DockPanel>
         <Border x:Name="chatBorder" BorderBrush="Gray" Margin="0,4,0,0" BorderThickness="1,1,1,0" CornerRadius="2,2,0,0">
             <ScrollViewer x:Name="chatScrollViewer" VerticalScrollBarVisibility="Auto" Focusable="False">
